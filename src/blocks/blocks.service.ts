@@ -1,74 +1,37 @@
 import { Injectable } from '@nestjs/common';
+import { BlockType } from './block-type.enum';
+import { validateBlock } from './block-validator';
 
 @Injectable()
 export class BlocksService {
   getBlocksByTopic(topicSlug: string) {
-    if (topicSlug === 'functions') {
-      return {
-        topic: {
-          slug: 'functions',
-          title: 'Functions'
-        },
-        blocks: [
-          {
-            type: 'intro',
-            data: {
-              title: 'Functions',
-              description:
-                'Functions are reusable blocks of logic used to perform a task.'
-            }
-          },
-          {
-            type: 'section',
-            data: {
-              title: 'Types of Functions'
-            }
-          },
-          {
-            type: 'accordion',
-            data: {
-              items: [
-                {
-                  title: 'Function Declaration',
-                  content: 'Standard way to define a function.'
-                },
-                {
-                  title: 'Arrow Function',
-                  content:
-                    'A shorter syntax with lexical this binding.'
-                },
-                {
-                  title: 'Pure Function',
-                  content:
-                    'Functions that do not produce side effects.'
-                }
-              ]
-            }
-          },
-          {
-            type: 'code',
-            data: {
-              language: 'javascript',
-              code:
-                'function add(a, b) {\n  return a + b;\n}'
-            }
-          },
-          {
-            type: 'reference',
-            data: {
-              title: 'MDN – Functions',
-              url:
-                'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions'
-            }
-          }
-        ]
+    const blocks = [
+      {
+        type: BlockType.INTRO,
+        data: {
+          title: 'Functions',
+          description:
+            'Functions are reusable blocks of logic.'
+        }
+      },
+      {
+        type: BlockType.CODE,
+        data: {
+          language: 'javascript',
+          code:
+            'function add(a, b) { return a + b }'
+        }
       }
-    }
+    ];
+
+    blocks.forEach(block =>
+      validateBlock(block.type, block.data)
+    );
 
     return {
       topic: { slug: topicSlug },
-      blocks: []
-    }
+      blocks
+    };
   }
 }
 

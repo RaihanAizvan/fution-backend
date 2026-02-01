@@ -1,25 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TopicsService {
-  getTopicsBySubject(subjectSlug: string) {
-    if (subjectSlug === 'javascript') {
-      return [
-        { slug: 'variables', title: 'Variables', order: 1 },
-        { slug: 'functions', title: 'Functions', order: 2 },
-        { slug: 'closures', title: 'Closures', order: 3 }
-      ]
+  constructor(private prisma: PrismaService) {}
+
+  async getTopicsBySubject(subjectSlug: string) {
+    const subject = await this.prisma.client.subject.findFirst({
+      where: { slug: subjectSlug, isActive: true },
+      include: {
+        topics: {
+          where: { isActive: true },
+          orderBy: { orderIndex: 'asc' },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            level: true,
+            orderIndex: true,
+          },
+        },
+      },
+    });
+
+    if (!subject) {
+      return [];
     }
 
-    if (subjectSlug === 'mongodb') {
-      return [
-        { slug: 'collections', title: 'Collections', order: 1 },
-        { slug: 'documents', title: 'Documents', order: 2 },
-        { slug: 'aggregation', title: 'Aggregation', order: 3 }
-      ]
-    }
-
-    return []
+    return subject.topics;
   }
 }
+
 

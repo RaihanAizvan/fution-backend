@@ -49,6 +49,8 @@ model TopicVersion {
   topic       Topic    @relation(fields: [topicId], references: [id])
   blocks      Block[]
   createdAt   DateTime @default(now())
+
+  @@unique([topicId, version])
 }
 
 model Block {

@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Subject {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  title       String
+  description String?
+  orderIndex  Int
+  isActive    Boolean  @default(true)
+  topics      Topic[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Topic {
+  id          String        @id @default(uuid())
+  subjectId   String
+  slug        String
+  title       String
+  level       String
+  orderIndex  Int
+  isActive    Boolean       @default(true)
+  subject     Subject       @relation(fields: [subjectId], references: [id])
+  versions    TopicVersion[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([subjectId, slug])
+}
+
+model TopicVersion {
+  id          String   @id @default(uuid())
+  topicId     String
+  version     Int
+  isPublished Boolean  @default(false)
+  topic       Topic    @relation(fields: [topicId], references: [id])
+  blocks      Block[]
+  createdAt   DateTime @default(now())
+}
+
+model Block {
+  id             String   @id @default(uuid())
+  topicVersionId String
+  type           String
+  orderIndex     Int
+  parentBlockId  String?
+  topicVersion   TopicVersion @relation(fields: [topicVersionId], references: [id])
+  parent         Block?  @relation("BlockHierarchy", fields: [parentBlockId], references: [id])
+  children       Block[] @relation("BlockHierarchy")
+  data           Json
+  createdAt      DateTime @default(now())
+}

@@ -30,13 +30,18 @@ export class BlocksService {
 
     const blocks = topic.versions[0].blocks;
 
-    blocks.forEach(block =>
-      validateBlock(block.type as BlockType, block.data)
-    );
+    const responseBlocks = blocks.map(block => {
+      validateBlock(block.type as BlockType, block.data);
+
+      return {
+        type: block.type,
+        data: block.data,
+      };
+    });
 
     return {
       topic: { slug: topic.slug, title: topic.title },
-      blocks,
+      blocks: responseBlocks,
     };
   }
 }

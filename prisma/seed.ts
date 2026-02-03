@@ -90,7 +90,24 @@ async function main() {
         orderIndex: 2,
         data: {
           language: 'javascript',
-          code: 'function add(a,b){ return a+b }',
+          code: 'function add(a, b) { return a + b; }',
+        },
+      },
+      {
+        topicVersionId: version.id,
+        type: 'accordion',
+        orderIndex: 3,
+        data: {
+          items: [
+            {
+              title: 'Arrow Functions',
+              content: 'Shorter function syntax with lexical this binding.',
+            },
+            {
+              title: 'Closures',
+              content: 'Functions that capture variables from their scope.',
+            },
+          ],
         },
       },
     ],

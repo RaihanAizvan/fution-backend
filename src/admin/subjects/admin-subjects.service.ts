@@ -22,15 +22,26 @@ export class AdminSubjectsService {
   }
 
   async createSubject(payload: CreateSubjectDto) {
+    const orderIndex = payload.orderIndex ?? (await this.getNextOrderIndex());
+
     return this.prisma.client.subject.create({
       data: {
         slug: payload.slug,
         title: payload.title,
         description: payload.description ?? null,
-        orderIndex: payload.orderIndex,
+        orderIndex,
         isActive: payload.isActive ?? true,
       },
     });
+  }
+
+  private async getNextOrderIndex() {
+    const last = await this.prisma.client.subject.findFirst({
+      orderBy: { orderIndex: 'desc' },
+      select: { orderIndex: true },
+    });
+
+    return (last?.orderIndex ?? 0) + 1;
   }
 
   async updateSubject(subjectId: string, payload: UpdateSubjectDto) {

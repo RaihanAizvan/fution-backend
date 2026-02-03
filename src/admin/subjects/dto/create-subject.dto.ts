@@ -11,8 +11,9 @@ export class CreateSubjectDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
   @IsInt()
-  orderIndex: number;
+  orderIndex?: number;
 
   @IsOptional()
   @IsBoolean()

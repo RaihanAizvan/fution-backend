@@ -10,6 +10,21 @@ import { ReorderBlocksDto } from './dto/reorder-blocks.dto';
 export class AdminBlocksService {
   constructor(private prisma: PrismaService) {}
 
+  async listBlocks(topicVersionId: string) {
+    await this.ensureTopicVersion(topicVersionId);
+
+    return this.prisma.client.block.findMany({
+      where: { topicVersionId },
+      orderBy: { orderIndex: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        orderIndex: true,
+        data: true,
+      },
+    });
+  }
+
   async createBlock(topicVersionId: string, payload: CreateBlockDto) {
     await this.ensureTopicVersion(topicVersionId);
 

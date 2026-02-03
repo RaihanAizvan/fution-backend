@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminBlocksService } from './admin-blocks.service';
 import { CreateBlockDto } from './dto/create-block.dto';
@@ -9,6 +9,11 @@ import { ReorderBlocksDto } from './dto/reorder-blocks.dto';
 @UseGuards(AdminGuard)
 export class AdminBlocksController {
   constructor(private readonly blocksService: AdminBlocksService) {}
+
+  @Get()
+  listBlocks(@Param('versionId') versionId: string) {
+    return this.blocksService.listBlocks(versionId);
+  }
 
   @Post()
   createBlock(

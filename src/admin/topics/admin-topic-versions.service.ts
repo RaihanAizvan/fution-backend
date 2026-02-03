@@ -6,6 +6,58 @@ import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 export class AdminTopicVersionsService {
   constructor(private prisma: PrismaService) {}
 
+  async listVersions(topicId: string) {
+    const topic = await this.prisma.client.topic.findUnique({
+      where: { id: topicId },
+      select: { id: true },
+    });
+
+    if (!topic) {
+      throw new NotFoundException('Topic not found');
+    }
+
+    return this.prisma.client.topicVersion.findMany({
+      where: { topicId },
+      orderBy: { version: 'asc' },
+      select: {
+        id: true,
+        version: true,
+        isPublished: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async getVersion(topicId: string, versionId: string) {
+    const version = await this.prisma.client.topicVersion.findFirst({
+      where: { id: versionId, topicId },
+      include: {
+        blocks: {
+          orderBy: { orderIndex: 'asc' },
+          select: {
+            id: true,
+            type: true,
+            orderIndex: true,
+            data: true,
+          },
+        },
+      },
+    });
+
+    if (!version) {
+      throw new NotFoundException('Topic version not found');
+    }
+
+    return {
+      id: version.id,
+      topicId: version.topicId,
+      version: version.version,
+      isPublished: version.isPublished,
+      createdAt: version.createdAt,
+      blocks: version.blocks,
+    };
+  }
+
   async createDraftVersion(topicId: string, payload: CreateTopicVersionDto) {
     const topic = await this.prisma.client.topic.findUnique({
       where: { id: topicId },

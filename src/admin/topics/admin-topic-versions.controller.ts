@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminTopicVersionsService } from './admin-topic-versions.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
@@ -7,6 +7,19 @@ import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 @UseGuards(AdminGuard)
 export class AdminTopicVersionsController {
   constructor(private readonly versionsService: AdminTopicVersionsService) {}
+
+  @Get()
+  listVersions(@Param('topicId') topicId: string) {
+    return this.versionsService.listVersions(topicId);
+  }
+
+  @Get(':versionId')
+  getVersion(
+    @Param('topicId') topicId: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.versionsService.getVersion(topicId, versionId);
+  }
 
   @Post()
   createVersion(

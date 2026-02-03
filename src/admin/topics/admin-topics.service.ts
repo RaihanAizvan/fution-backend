@@ -7,6 +7,30 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 export class AdminTopicsService {
   constructor(private prisma: PrismaService) {}
 
+  async listTopics(subjectId: string) {
+    const subject = await this.prisma.client.subject.findUnique({
+      where: { id: subjectId },
+      select: { id: true },
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    return this.prisma.client.topic.findMany({
+      where: { subjectId },
+      orderBy: { orderIndex: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        level: true,
+        orderIndex: true,
+        isActive: true,
+      },
+    });
+  }
+
   async createTopic(subjectId: string, payload: CreateTopicDto) {
     const subject = await this.prisma.client.subject.findUnique({
       where: { id: subjectId },

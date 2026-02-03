@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class UpdateBlockDto {
   @IsOptional()
@@ -10,5 +10,6 @@ export class UpdateBlockDto {
   orderIndex?: number;
 
   @IsOptional()
+  @IsObject()
   data?: Record<string, any>;
 }

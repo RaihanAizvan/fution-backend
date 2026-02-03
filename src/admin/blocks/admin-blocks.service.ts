@@ -35,7 +35,7 @@ export class AdminBlocksService {
         topicVersionId,
         type: payload.type,
         orderIndex: payload.orderIndex,
-        data: payload.data,
+        data: payload.data ?? {},
       },
     });
   }
@@ -58,7 +58,7 @@ export class AdminBlocksService {
       where: { id: blockId },
       data: {
         type: nextType,
-        data: nextData,
+        data: nextData ?? {},
         orderIndex: payload.orderIndex ?? block.orderIndex,
       },
     });

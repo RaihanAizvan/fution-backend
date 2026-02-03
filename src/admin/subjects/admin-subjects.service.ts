@@ -7,6 +7,20 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 export class AdminSubjectsService {
   constructor(private prisma: PrismaService) {}
 
+  async listSubjects() {
+    return this.prisma.client.subject.findMany({
+      orderBy: { orderIndex: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        orderIndex: true,
+        isActive: true,
+      },
+    });
+  }
+
   async createSubject(payload: CreateSubjectDto) {
     return this.prisma.client.subject.create({
       data: {

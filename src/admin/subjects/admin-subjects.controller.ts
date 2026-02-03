@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminSubjectsService } from './admin-subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
@@ -8,6 +8,11 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 @UseGuards(AdminGuard)
 export class AdminSubjectsController {
   constructor(private readonly subjectsService: AdminSubjectsService) {}
+
+  @Get()
+  listSubjects() {
+    return this.subjectsService.listSubjects();
+  }
 
   @Post()
   createSubject(@Body() payload: CreateSubjectDto) {

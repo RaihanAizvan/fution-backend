@@ -48,16 +48,28 @@ export class AdminTopicsService {
       throw new BadRequestException('Topic slug already exists for subject');
     }
 
+    const orderIndex = payload.orderIndex ?? (await this.getNextOrderIndex(subjectId));
+
     return this.prisma.client.topic.create({
       data: {
         subjectId,
         slug: payload.slug,
         title: payload.title,
         level: payload.level,
-        orderIndex: payload.orderIndex,
+        orderIndex,
         isActive: payload.isActive ?? true,
       },
     });
+  }
+
+  private async getNextOrderIndex(subjectId: string) {
+    const last = await this.prisma.client.topic.findFirst({
+      where: { subjectId },
+      orderBy: { orderIndex: 'desc' },
+      select: { orderIndex: true },
+    });
+
+    return (last?.orderIndex ?? 0) + 1;
   }
 
   async updateTopic(subjectId: string, topicId: string, payload: UpdateTopicDto) {

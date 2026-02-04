@@ -10,8 +10,9 @@ export class CreateTopicDto {
   @IsString()
   level: string;
 
+  @IsOptional()
   @IsInt()
-  orderIndex: number;
+  orderIndex?: number;
 
   @IsOptional()
   @IsBoolean()

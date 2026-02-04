@@ -1,11 +1,11 @@
-import { IsArray, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class TopicOrderItem {
   @IsString()
   topicId: string;
 
-  @IsString()
+  @IsInt()
   orderIndex: number;
 }
 

@@ -4,6 +4,7 @@ import { AdminSubjectsService } from './admin-subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { ReorderSubjectsDto } from './dto/reorder-subjects.dto';
+import { BulkImportSubjectDto } from './dto/bulk-import-subject.dto';
 
 @Controller('admin/subjects')
 @UseGuards(AdminGuard)
@@ -36,5 +37,10 @@ export class AdminSubjectsController {
   @Put('reorder')
   reorderSubjects(@Body() payload: ReorderSubjectsDto) {
     return this.subjectsService.reorderSubjects(payload.subjects);
+  }
+
+  @Post('import')
+  importSubjectTree(@Body() payload: BulkImportSubjectDto) {
+    return this.subjectsService.importSubjectTree(payload);
   }
 }

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { BlockType } from '../../blocks/block-type.enum';
 import { validateBlock } from '../../blocks/block-validator';
@@ -303,7 +304,7 @@ export class AdminSubjectsService {
     return errors;
   }
 
-  private async getNextTopicOrderIndex(tx: PrismaService['client'], subjectId: string) {
+  private async getNextTopicOrderIndex(tx: Prisma.TransactionClient, subjectId: string) {
     const last = await tx.topic.findFirst({
       where: { subjectId },
       orderBy: { orderIndex: 'desc' },
@@ -313,7 +314,7 @@ export class AdminSubjectsService {
     return (last?.orderIndex ?? 0) + 1;
   }
 
-  private async getNextSubjectOrderIndex(tx: PrismaService['client']) {
+  private async getNextSubjectOrderIndex(tx: Prisma.TransactionClient) {
     const last = await tx.subject.findFirst({
       orderBy: { orderIndex: 'desc' },
       select: { orderIndex: true },

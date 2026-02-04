@@ -94,4 +94,32 @@ export class AdminTopicsService {
       },
     });
   }
+
+  async deleteTopic(subjectId: string, topicId: string) {
+    const topic = await this.prisma.client.topic.findFirst({
+      where: { id: topicId, subjectId },
+      include: {
+        versions: {
+          where: { isPublished: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!topic) {
+      throw new NotFoundException('Topic not found');
+    }
+
+    // Check if topic has published versions
+    if (topic.versions.length > 0) {
+      throw new BadRequestException(
+        'Cannot delete topic with published content. Deactivate it instead or unpublish the versions first.',
+      );
+    }
+
+    // Delete cascade: topic versions -> blocks (handled by DB cascade)
+    return this.prisma.client.topic.delete({
+      where: { id: topicId },
+    });
+  }
 }

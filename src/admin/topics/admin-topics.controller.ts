@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminTopicsService } from './admin-topics.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
@@ -29,5 +29,13 @@ export class AdminTopicsController {
     @Body() payload: UpdateTopicDto,
   ) {
     return this.topicsService.updateTopic(subjectId, topicId, payload);
+  }
+
+  @Delete(':topicId')
+  deleteTopic(
+    @Param('subjectId') subjectId: string,
+    @Param('topicId') topicId: string,
+  ) {
+    return this.topicsService.deleteTopic(subjectId, topicId);
   }
 }

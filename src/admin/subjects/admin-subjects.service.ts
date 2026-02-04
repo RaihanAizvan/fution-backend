@@ -77,4 +77,40 @@ export class AdminSubjectsService {
       },
     });
   }
+
+  async deleteSubject(subjectId: string) {
+    const subject = await this.prisma.client.subject.findUnique({
+      where: { id: subjectId },
+      include: {
+        topics: {
+          include: {
+            versions: {
+              where: { isPublished: true },
+              select: { id: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    // Check if any topics have published content
+    const hasPublishedContent = subject.topics.some(
+      (topic) => topic.versions.length > 0,
+    );
+
+    if (hasPublishedContent) {
+      throw new BadRequestException(
+        'Cannot delete subject with published topic content. Deactivate it instead or unpublish the content first.',
+      );
+    }
+
+    // Delete cascade: topics -> topic versions -> blocks (handled by DB cascade)
+    return this.prisma.client.subject.delete({
+      where: { id: subjectId },
+    });
+  }
 }

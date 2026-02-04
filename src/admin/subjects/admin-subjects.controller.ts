@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminSubjectsService } from './admin-subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
@@ -25,5 +25,10 @@ export class AdminSubjectsController {
     @Body() payload: UpdateSubjectDto,
   ) {
     return this.subjectsService.updateSubject(subjectId, payload);
+  }
+
+  @Delete(':subjectId')
+  deleteSubject(@Param('subjectId') subjectId: string) {
+    return this.subjectsService.deleteSubject(subjectId);
   }
 }

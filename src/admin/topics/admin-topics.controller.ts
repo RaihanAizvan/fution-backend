@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminTopicsService } from './admin-topics.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
+import { ReorderTopicsDto } from './dto/reorder-topics.dto';
 
 @Controller('admin/subjects/:subjectId/topics')
 @UseGuards(AdminGuard)
@@ -37,5 +38,13 @@ export class AdminTopicsController {
     @Param('topicId') topicId: string,
   ) {
     return this.topicsService.deleteTopic(subjectId, topicId);
+  }
+
+  @Put('reorder')
+  reorderTopics(
+    @Param('subjectId') subjectId: string,
+    @Body() payload: ReorderTopicsDto,
+  ) {
+    return this.topicsService.reorderTopics(subjectId, payload.topics);
   }
 }

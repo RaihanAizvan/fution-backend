@@ -134,4 +134,38 @@ export class AdminTopicsService {
       where: { id: topicId },
     });
   }
+
+  async reorderTopics(subjectId: string, topics: { topicId: string; orderIndex: number }[]) {
+    const subject = await this.prisma.client.subject.findUnique({
+      where: { id: subjectId },
+      select: { id: true },
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    // Verify all topics belong to this subject
+    const topicIds = topics.map(t => t.topicId);
+    const existingTopics = await this.prisma.client.topic.findMany({
+      where: { id: { in: topicIds }, subjectId },
+      select: { id: true },
+    });
+
+    if (existingTopics.length !== topicIds.length) {
+      throw new BadRequestException('One or more topics not found or do not belong to this subject');
+    }
+
+    // Update all topics in a transaction
+    await this.prisma.client.$transaction(
+      topics.map(({ topicId, orderIndex }) =>
+        this.prisma.client.topic.update({
+          where: { id: topicId },
+          data: { orderIndex },
+        }),
+      ),
+    );
+
+    return { message: 'Topics reordered successfully' };
+  }
 }

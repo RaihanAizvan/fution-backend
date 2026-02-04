@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BlockType } from './block-type.enum';
+import { normalizeBlockData } from './block-normalizer';
 import { validateBlock } from './block-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -35,7 +36,7 @@ export class BlocksService {
 
       return {
         type: block.type,
-        data: block.data,
+        data: normalizeBlockData(block.type as BlockType, block.data),
       };
     });
 

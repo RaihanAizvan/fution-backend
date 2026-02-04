@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { BlockType } from '../../blocks/block-type.enum';
+import { normalizeBlockData } from '../../blocks/block-normalizer';
 import { validateBlock } from '../../blocks/block-validator';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateBlockDto } from './dto/create-block.dto';
@@ -22,7 +23,12 @@ export class AdminBlocksService {
         orderIndex: true,
         data: true,
       },
-    });
+    }).then(blocks =>
+      blocks.map(block => ({
+        ...block,
+        data: normalizeBlockData(block.type as BlockType, block.data),
+      })),
+    );
   }
 
   async createBlock(topicVersionId: string, payload: CreateBlockDto) {

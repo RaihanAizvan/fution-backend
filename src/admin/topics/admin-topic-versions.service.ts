@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { BlockType } from '../../blocks/block-type.enum';
+import { normalizeBlockData } from '../../blocks/block-normalizer';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 
@@ -54,7 +56,10 @@ export class AdminTopicVersionsService {
       version: version.version,
       isPublished: version.isPublished,
       createdAt: version.createdAt,
-      blocks: version.blocks,
+      blocks: version.blocks.map(block => ({
+        ...block,
+        data: normalizeBlockData(block.type as BlockType, block.data),
+      })),
     };
   }
 

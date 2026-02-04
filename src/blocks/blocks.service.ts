@@ -32,11 +32,15 @@ export class BlocksService {
     const blocks = topic.versions[0].blocks;
 
     const responseBlocks = blocks.map(block => {
-      validateBlock(block.type as BlockType, block.data);
+      const normalizedData = normalizeBlockData(
+        block.type as BlockType,
+        block.data,
+      );
+      validateBlock(block.type as BlockType, normalizedData);
 
       return {
         type: block.type,
-        data: normalizeBlockData(block.type as BlockType, block.data),
+        data: normalizedData,
       };
     });
 

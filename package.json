@@ -9,6 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "prisma:generate": "prisma generate",
+    "prisma:normalize-blocks": "node -r ts-node/register prisma/normalize-blocks.ts",
     "prestart": "prisma generate",
     "prestart:dev": "prisma generate",
     "prestart:debug": "prisma generate",

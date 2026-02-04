@@ -22,6 +22,14 @@ export class AdminSubjectsService {
   }
 
   async createSubject(payload: CreateSubjectDto) {
+    const existing = await this.prisma.client.subject.findFirst({
+      where: { slug: payload.slug },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Subject slug already exists');
+    }
+
     const orderIndex = payload.orderIndex ?? (await this.getNextOrderIndex());
 
     return this.prisma.client.subject.create({

@@ -33,7 +33,7 @@ model Topic {
   level       String
   orderIndex  Int
   isActive    Boolean       @default(true)
-  subject     Subject       @relation(fields: [subjectId], references: [id])
+  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   versions    TopicVersion[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -46,7 +46,7 @@ model TopicVersion {
   topicId     String
   version     Int
   isPublished Boolean  @default(false)
-  topic       Topic    @relation(fields: [topicId], references: [id])
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
   blocks      Block[]
   createdAt   DateTime @default(now())
 
@@ -59,8 +59,8 @@ model Block {
   type           String
   orderIndex     Int
   parentBlockId  String?
-  topicVersion   TopicVersion @relation(fields: [topicVersionId], references: [id])
-  parent         Block?  @relation("BlockHierarchy", fields: [parentBlockId], references: [id])
+  topicVersion   TopicVersion @relation(fields: [topicVersionId], references: [id], onDelete: Cascade)
+  parent         Block?  @relation("BlockHierarchy", fields: [parentBlockId], references: [id], onDelete: Cascade)
   children       Block[] @relation("BlockHierarchy")
   data           Json
   createdAt      DateTime @default(now())

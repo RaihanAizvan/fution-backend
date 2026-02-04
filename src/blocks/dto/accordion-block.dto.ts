@@ -13,6 +13,10 @@ export class AccordionItemDto {
   @IsOptional()
   @IsEmpty()
   content?: string;
+
+  @IsOptional()
+  @IsEmpty()
+  text?: string;
 }
 
 export class AccordionBlockDto {

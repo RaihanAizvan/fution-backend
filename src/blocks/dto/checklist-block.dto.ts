@@ -14,6 +14,10 @@ export class ChecklistItemDto {
   @IsOptional()
   @IsEmpty()
   text?: string;
+
+  @IsOptional()
+  @IsEmpty()
+  content?: string;
 }
 
 export class ChecklistBlockDto {

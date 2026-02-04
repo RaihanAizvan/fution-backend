@@ -43,7 +43,10 @@ export class AdminBlocksService {
         orderIndex: payload.orderIndex,
         data: payload.data ?? {},
       },
-    });
+    }).then(block => ({
+      ...block,
+      data: normalizeBlockData(block.type as BlockType, block.data),
+    }));
   }
 
   async updateBlock(topicVersionId: string, blockId: string, payload: UpdateBlockDto) {
@@ -67,7 +70,10 @@ export class AdminBlocksService {
         data: nextData ?? {},
         orderIndex: payload.orderIndex ?? block.orderIndex,
       },
-    });
+    }).then(updated => ({
+      ...updated,
+      data: normalizeBlockData(updated.type as BlockType, updated.data),
+    }));
   }
 
   async deleteBlock(topicVersionId: string, blockId: string) {

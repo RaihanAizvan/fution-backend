@@ -162,7 +162,10 @@ export class AdminSubjectsService {
         where: { slug: payload.subject.slug },
       });
 
-      const subjectOrderIndex = payload.subject.orderIndex ?? subject?.orderIndex ?? (await this.getNextOrderIndex());
+      const subjectOrderIndex =
+        payload.subject.orderIndex ??
+        subject?.orderIndex ??
+        (await this.getNextSubjectOrderIndex(tx));
       const subjectRecord = subject
         ? await tx.subject.update({
             where: { id: subject.id },
@@ -303,6 +306,15 @@ export class AdminSubjectsService {
   private async getNextTopicOrderIndex(tx: PrismaService['client'], subjectId: string) {
     const last = await tx.topic.findFirst({
       where: { subjectId },
+      orderBy: { orderIndex: 'desc' },
+      select: { orderIndex: true },
+    });
+
+    return (last?.orderIndex ?? 0) + 1;
+  }
+
+  private async getNextSubjectOrderIndex(tx: PrismaService['client']) {
+    const last = await tx.subject.findFirst({
       orderBy: { orderIndex: 'desc' },
       select: { orderIndex: true },
     });

@@ -121,4 +121,29 @@ export class AdminSubjectsService {
       where: { id: subjectId },
     });
   }
+
+  async reorderSubjects(subjects: { subjectId: string; orderIndex: number }[]) {
+    // Verify all subjects exist
+    const subjectIds = subjects.map(s => s.subjectId);
+    const existingSubjects = await this.prisma.client.subject.findMany({
+      where: { id: { in: subjectIds } },
+      select: { id: true },
+    });
+
+    if (existingSubjects.length !== subjectIds.length) {
+      throw new BadRequestException('One or more subjects not found');
+    }
+
+    // Update all subjects in a transaction
+    await this.prisma.client.$transaction(
+      subjects.map(({ subjectId, orderIndex }) =>
+        this.prisma.client.subject.update({
+          where: { id: subjectId },
+          data: { orderIndex },
+        }),
+      ),
+    );
+
+    return { message: 'Subjects reordered successfully' };
+  }
 }

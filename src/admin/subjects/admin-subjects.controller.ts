@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminSubjectsService } from './admin-subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
+import { ReorderSubjectsDto } from './dto/reorder-subjects.dto';
 
 @Controller('admin/subjects')
 @UseGuards(AdminGuard)
@@ -30,5 +31,10 @@ export class AdminSubjectsController {
   @Delete(':subjectId')
   deleteSubject(@Param('subjectId') subjectId: string) {
     return this.subjectsService.deleteSubject(subjectId);
+  }
+
+  @Put('reorder')
+  reorderSubjects(@Body() payload: ReorderSubjectsDto) {
+    return this.subjectsService.reorderSubjects(payload.subjects);
   }
 }

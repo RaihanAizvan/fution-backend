@@ -120,10 +120,40 @@ export class AdminSubjectsService {
       );
     }
 
-    // Delete cascade: topics -> topic versions -> blocks (handled by DB cascade)
-    return this.prisma.client.subject.delete({
-      where: { id: subjectId },
+    const topics = await this.prisma.client.topic.findMany({
+      where: { subjectId },
+      select: { id: true },
     });
+    const topicIds = topics.map(topic => topic.id);
+
+    await this.prisma.client.$transaction(async tx => {
+      if (topicIds.length > 0) {
+        const versions = await tx.topicVersion.findMany({
+          where: { topicId: { in: topicIds } },
+          select: { id: true },
+        });
+        const versionIds = versions.map(version => version.id);
+
+        if (versionIds.length > 0) {
+          await tx.block.deleteMany({
+            where: { topicVersionId: { in: versionIds } },
+          });
+          await tx.topicVersion.deleteMany({
+            where: { id: { in: versionIds } },
+          });
+        }
+
+        await tx.topic.deleteMany({
+          where: { id: { in: topicIds } },
+        });
+      }
+
+      await tx.subject.delete({
+        where: { id: subjectId },
+      });
+    });
+
+    return { deleted: true };
   }
 
   async reorderSubjects(subjects: { subjectId: string; orderIndex: number }[]) {

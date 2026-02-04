@@ -129,10 +129,28 @@ export class AdminTopicsService {
       );
     }
 
-    // Delete cascade: topic versions -> blocks (handled by DB cascade)
-    return this.prisma.client.topic.delete({
-      where: { id: topicId },
+    const versions = await this.prisma.client.topicVersion.findMany({
+      where: { topicId },
+      select: { id: true },
     });
+    const versionIds = versions.map(version => version.id);
+
+    await this.prisma.client.$transaction(async tx => {
+      if (versionIds.length > 0) {
+        await tx.block.deleteMany({
+          where: { topicVersionId: { in: versionIds } },
+        });
+        await tx.topicVersion.deleteMany({
+          where: { id: { in: versionIds } },
+        });
+      }
+
+      await tx.topic.delete({
+        where: { id: topicId },
+      });
+    });
+
+    return { deleted: true };
   }
 
   async reorderTopics(subjectId: string, topics: { topicId: string; orderIndex: number }[]) {

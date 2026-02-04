@@ -1,10 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 class BulkBlockDto {
   @IsString()
   type: string;
 
+  @IsObject()
   data: Record<string, any>;
 }
 
@@ -31,6 +32,7 @@ class BulkTopicDto {
   level?: string;
 
   @IsOptional()
+  @IsInt()
   orderIndex?: number;
 
   @IsOptional()
@@ -51,6 +53,7 @@ class BulkSubjectDto {
   title: string;
 
   @IsOptional()
+  @IsInt()
   orderIndex?: number;
 
   @IsOptional()

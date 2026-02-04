@@ -261,6 +261,68 @@ Body
   "data": { "title": "Intro", "description": "..." }
 }
 
+Block type examples
+
+Intro
+{
+  "type": "intro",
+  "data": {
+    "title": "Functions",
+    "description": "Reusable blocks of logic."
+  }
+}
+
+Code
+{
+  "type": "code",
+  "data": {
+    "language": "javascript",
+    "code": "function add(a, b) { return a + b; }"
+  }
+}
+
+Accordion
+{
+  "type": "accordion",
+  "data": {
+    "items": [
+      { "title": "Arrow Functions", "content": "Shorter syntax with lexical this." },
+      { "title": "Closures", "content": "Functions that capture variables from their scope." }
+    ]
+  }
+}
+
+Checklist
+{
+  "type": "checklist",
+  "data": {
+    "items": [
+      { "text": "Use descriptive variable names" },
+      { "text": "Prefer const/let over var" }
+    ]
+  }
+}
+
+Pitfalls
+{
+  "type": "pitfalls",
+  "data": {
+    "items": [
+      { "title": "Hoisting", "description": "Function declarations are hoisted." }
+    ]
+  }
+}
+
+Resources
+{
+  "type": "resources",
+  "data": {
+    "items": [
+      { "title": "MDN Functions", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions" }
+    ]
+  }
+}
+
 PATCH /admin/versions/:versionId/blocks/:blockId
 Update a block.
 

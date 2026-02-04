@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { BlockType } from '../../blocks/block-type.enum';
+import { validateBlock } from '../../blocks/block-validator';
+import { BulkImportSubjectDto } from './dto/bulk-import-subject.dto';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 
@@ -145,5 +148,165 @@ export class AdminSubjectsService {
     );
 
     return { message: 'Subjects reordered successfully' };
+  }
+
+  async importSubjectTree(payload: BulkImportSubjectDto) {
+    const errors = this.validateImportPayload(payload);
+
+    if (errors.length > 0) {
+      throw new BadRequestException({ error: 'VALIDATION_ERROR', errors });
+    }
+
+    return this.prisma.client.$transaction(async (tx) => {
+      const subject = await tx.subject.findFirst({
+        where: { slug: payload.subject.slug },
+      });
+
+      const subjectOrderIndex = payload.subject.orderIndex ?? subject?.orderIndex ?? (await this.getNextOrderIndex());
+      const subjectRecord = subject
+        ? await tx.subject.update({
+            where: { id: subject.id },
+            data: {
+              title: payload.subject.title,
+              orderIndex: subjectOrderIndex,
+              isActive: payload.subject.isActive ?? subject.isActive,
+            },
+          })
+        : await tx.subject.create({
+            data: {
+              slug: payload.subject.slug,
+              title: payload.subject.title,
+              orderIndex: subjectOrderIndex,
+              isActive: payload.subject.isActive ?? true,
+            },
+          });
+
+      for (const topicPayload of payload.topics) {
+        const existingTopic = await tx.topic.findFirst({
+          where: { subjectId: subjectRecord.id, slug: topicPayload.slug },
+        });
+
+        const topicOrderIndex = topicPayload.orderIndex ?? existingTopic?.orderIndex ?? (await this.getNextTopicOrderIndex(tx, subjectRecord.id));
+        const topicLevel = topicPayload.level ?? existingTopic?.level;
+
+        if (!topicLevel) {
+          throw new BadRequestException({
+            error: 'VALIDATION_ERROR',
+            errors: [`Topic ${topicPayload.slug} is missing level`],
+          });
+        }
+
+        const topicRecord = existingTopic
+          ? await tx.topic.update({
+              where: { id: existingTopic.id },
+              data: {
+                title: topicPayload.title,
+                orderIndex: topicOrderIndex,
+                isActive: topicPayload.isActive ?? existingTopic.isActive,
+                level: topicLevel,
+              },
+            })
+          : await tx.topic.create({
+              data: {
+                subjectId: subjectRecord.id,
+                slug: topicPayload.slug,
+                title: topicPayload.title,
+                orderIndex: topicOrderIndex,
+                isActive: topicPayload.isActive ?? true,
+                level: topicLevel,
+              },
+            });
+
+        let currentVersion = await tx.topicVersion.findFirst({
+          where: { topicId: topicRecord.id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+
+        for (const versionPayload of topicPayload.versions) {
+          const nextVersionNumber = (currentVersion?.version ?? 0) + 1;
+          currentVersion = { version: nextVersionNumber };
+
+          const createdVersion = await tx.topicVersion.create({
+            data: {
+              topicId: topicRecord.id,
+              version: nextVersionNumber,
+              isPublished: false,
+            },
+          });
+
+          if (versionPayload.status === 'published') {
+            await tx.topicVersion.updateMany({
+              where: { topicId: topicRecord.id, isPublished: true },
+              data: { isPublished: false },
+            });
+
+            await tx.topicVersion.update({
+              where: { id: createdVersion.id },
+              data: { isPublished: true },
+            });
+          }
+
+          await tx.block.createMany({
+            data: versionPayload.blocks.map((block, index) => ({
+              topicVersionId: createdVersion.id,
+              type: block.type,
+              orderIndex: index + 1,
+              data: block.data ?? {},
+            })),
+          });
+        }
+      }
+
+      return { imported: true, subjectId: subjectRecord.id };
+    });
+  }
+
+  private validateImportPayload(payload: BulkImportSubjectDto) {
+    const errors: string[] = [];
+
+    payload.topics.forEach((topic, topicIndex) => {
+      if (!topic.versions || topic.versions.length === 0) {
+        errors.push(`topics[${topicIndex}].versions must not be empty`);
+        return;
+      }
+
+      const publishedCount = topic.versions.filter(
+        version => version.status === 'published',
+      ).length;
+
+      if (publishedCount > 1) {
+        errors.push(`topics[${topicIndex}] has multiple published versions`);
+      }
+
+      topic.versions.forEach((version, versionIndex) => {
+        if (version.status && version.status !== 'published') {
+          errors.push(`topics[${topicIndex}].versions[${versionIndex}].status must be "published" or omitted`);
+        }
+
+        version.blocks.forEach((block, blockIndex) => {
+          try {
+            validateBlock(block.type as BlockType, block.data);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Invalid block data';
+            errors.push(
+              `topics[${topicIndex}].versions[${versionIndex}].blocks[${blockIndex}] ${message}`,
+            );
+          }
+        });
+      });
+    });
+
+    return errors;
+  }
+
+  private async getNextTopicOrderIndex(tx: PrismaService['client'], subjectId: string) {
+    const last = await tx.topic.findFirst({
+      where: { subjectId },
+      orderBy: { orderIndex: 'desc' },
+      select: { orderIndex: true },
+    });
+
+    return (last?.orderIndex ?? 0) + 1;
   }
 }

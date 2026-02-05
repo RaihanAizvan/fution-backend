@@ -54,12 +54,16 @@ Delete a subject.
 
 Rules
 - Fails if any topic under the subject has a published version.
+- If allowed, deletes subject, topics, versions, and blocks in a transaction.
 
 Error
 {
   "statusCode": 400,
   "message": "Cannot delete subject with published topic content. Deactivate it instead or unpublish the content first."
 }
+
+Response
+{ "deleted": true }
 
 PUT /admin/subjects/reorder
 Bulk reorder subjects.
@@ -158,11 +162,33 @@ Example Bulk Import JSON (full subject tree)
                 "items": [
                   {
                     "title": "Arrow Functions",
-                    "content": "Shorter syntax with lexical this."
+                    "description": "Shorter syntax with lexical this."
                   },
                   {
                     "title": "Closures",
-                    "content": "Functions that capture variables from their scope."
+                    "description": "Functions that capture variables from their scope."
+                  }
+                ]
+              }
+            },
+            {
+              "type": "checklist",
+              "data": {
+                "items": [
+                  {
+                    "title": "Use descriptive variable names",
+                    "description": "Optional detail"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "pitfalls",
+              "data": {
+                "items": [
+                  {
+                    "title": "Hoisting",
+                    "description": "Function declarations are hoisted."
                   }
                 ]
               }
@@ -214,6 +240,10 @@ Delete a topic.
 
 Rules
 - Fails if the topic has any published version.
+- If allowed, deletes topic, versions, and blocks in a transaction.
+
+Response
+{ "deleted": true }
 
 PUT /admin/subjects/:subjectId/topics/reorder
 Bulk reorder topics inside a subject.
@@ -228,23 +258,22 @@ Body
 
 Topic Versions
 
-GET /admin/subjects/:subjectId/topics/:topicId/versions
+GET /admin/topics/:topicId/versions
 List all versions for a topic.
 
-POST /admin/subjects/:subjectId/topics/:topicId/versions
-Create a topic version.
+GET /admin/topics/:topicId/versions/:versionId
+Get a specific version (includes blocks).
+
+POST /admin/topics/:topicId/versions
+Create a draft version.
 
 Body
 {
-  "version": 2,
-  "isPublished": false
+  "version": 2
 }
 
-PATCH /admin/subjects/:subjectId/topics/:topicId/versions/:versionId
-Update version (e.g. publish/unpublish).
-
-DELETE /admin/subjects/:subjectId/topics/:topicId/versions/:versionId
-Delete a version.
+POST /admin/topics/:topicId/versions/:versionId/publish
+Publish a version (unpublishes prior published version).
 
 Blocks
 
@@ -286,8 +315,8 @@ Accordion
   "type": "accordion",
   "data": {
     "items": [
-      { "title": "Arrow Functions", "content": "Shorter syntax with lexical this." },
-      { "title": "Closures", "content": "Functions that capture variables from their scope." }
+      { "title": "Arrow Functions", "description": "Shorter syntax with lexical this." },
+      { "title": "Closures", "description": "Functions that capture variables from their scope." }
     ]
   }
 }
@@ -297,8 +326,8 @@ Checklist
   "type": "checklist",
   "data": {
     "items": [
-      { "text": "Use descriptive variable names" },
-      { "text": "Prefer const/let over var" }
+      { "title": "Use descriptive variable names", "description": "Optional detail" },
+      { "title": "Prefer const/let over var", "description": "Optional detail" }
     ]
   }
 }

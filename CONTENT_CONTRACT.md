@@ -7,7 +7,7 @@ GET /topics/:slug/content
 
 Response
 {
-  "topic": { "slug": "string", "title": "string" },
+  "topic": { "slug": "string", "title": "string", "isActive": "boolean" },
   "blocks": [
     { "type": "intro", "data": { "title": "string", "description": "string" } },
     { "type": "code", "data": { "language": "string", "code": "string" } },

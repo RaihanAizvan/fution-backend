@@ -45,7 +45,7 @@ export class BlocksService {
     });
 
     return {
-      topic: { slug: topic.slug, title: topic.title },
+      topic: { slug: topic.slug, title: topic.title, isActive: topic.isActive },
       blocks: responseBlocks,
     };
   }

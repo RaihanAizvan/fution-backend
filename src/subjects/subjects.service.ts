@@ -1,11 +1,22 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class SubjectsService {
-    getAllSubjects() {
-        return [
-            { slug: 'javascript', title: 'Javascript' },
-            { slug: 'mongodb', title: 'Mongodb' },
-        ];
-    }
+  constructor(private prisma: PrismaService) {}
+
+  async getAllSubjects() {
+    return this.prisma.client.subject.findMany({
+      where: { isActive: true },
+      orderBy: { orderIndex: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        orderIndex: true,
+        isActive: true,
+      },
+    });
+  }
 }

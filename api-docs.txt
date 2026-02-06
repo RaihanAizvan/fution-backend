@@ -369,6 +369,24 @@ Body
   ]
 }
 
+Public Content
+
+GET /topics/:slug/content
+Fetch published content for a topic.
+
+Response
+{
+  "topic": { "slug": "string", "title": "string", "isActive": "boolean" },
+  "blocks": [
+    { "type": "intro", "data": { "title": "string", "description": "string" } },
+    { "type": "code", "data": { "language": "string", "code": "string" } },
+    { "type": "accordion", "data": { "items": [ { "title": "string", "description": "string" } ] } },
+    { "type": "checklist", "data": { "items": [ { "title": "string", "description": "string" } ] } },
+    { "type": "pitfalls", "data": { "items": [ { "title": "string", "description": "string" } ] } },
+    { "type": "resources", "data": { "items": [ { "title": "string", "url": "string" } ] } }
+  ]
+}
+
 Validation & Errors
 
 Validation Pipe Enabled

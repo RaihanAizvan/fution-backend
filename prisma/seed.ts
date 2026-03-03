@@ -59,11 +59,13 @@ async function main() {
     },
     update: {
       isPublished: true,
+      markdown: '# Functions\n\nReusable blocks of logic.\n',
     },
     create: {
       topicId: functions.id,
       version: 1,
       isPublished: true,
+      markdown: '# Functions\n\nReusable blocks of logic.\n',
     },
   });
 

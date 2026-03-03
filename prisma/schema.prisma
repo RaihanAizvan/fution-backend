@@ -46,6 +46,7 @@ model TopicVersion {
   topicId     String
   version     Int
   isPublished Boolean  @default(false)
+  markdown    String?
   topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
   blocks      Block[]
   createdAt   DateTime @default(now())

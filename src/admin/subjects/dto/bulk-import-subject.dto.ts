@@ -14,6 +14,10 @@ class BulkTopicVersionDto {
   @IsString()
   status?: string;
 
+  @IsOptional()
+  @IsString()
+  markdown?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BulkBlockDto)

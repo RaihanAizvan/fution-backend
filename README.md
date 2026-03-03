@@ -23,7 +23,7 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Fution backend API for subjects/topics content. Supports versioned topic content with blocks and optional markdown storage.
 
 ## Project setup
 

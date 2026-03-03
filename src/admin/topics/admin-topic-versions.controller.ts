@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, Patch } from '@nestjs/common';
 import { AdminGuard } from '../admin.guard';
 import { AdminTopicVersionsService } from './admin-topic-versions.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
@@ -36,4 +36,14 @@ export class AdminTopicVersionsController {
   ) {
     return this.versionsService.publishVersion(topicId, versionId);
   }
+
+  @Patch(':versionId')
+  updateVersion(
+    @Param('topicId') topicId: string,
+    @Param('versionId') versionId: string,
+    @Body() payload: CreateTopicVersionDto,
+  ) {
+    return this.versionsService.updateVersion(topicId, versionId, payload);
+  }
 }
+

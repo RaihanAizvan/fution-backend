@@ -266,6 +266,7 @@ export class AdminSubjectsService {
               topicId: topicRecord.id,
               version: nextVersionNumber,
               isPublished: false,
+              markdown: versionPayload.markdown ?? null,
             },
           });
 
@@ -316,6 +317,10 @@ export class AdminSubjectsService {
       topic.versions.forEach((version, versionIndex) => {
         if (version.status && version.status !== 'published') {
           errors.push(`topics[${topicIndex}].versions[${versionIndex}].status must be "published" or omitted`);
+        }
+
+        if (version.markdown && typeof version.markdown !== 'string') {
+          errors.push(`topics[${topicIndex}].versions[${versionIndex}].markdown must be a string`);
         }
 
         version.blocks.forEach((block, blockIndex) => {

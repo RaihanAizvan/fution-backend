@@ -46,6 +46,7 @@ export class BlocksService {
 
     return {
       topic: { slug: topic.slug, title: topic.title, isActive: topic.isActive },
+      markdown: topic.versions[0].markdown ?? null,
       blocks: responseBlocks,
     };
   }

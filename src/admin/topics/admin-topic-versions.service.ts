@@ -26,6 +26,7 @@ export class AdminTopicVersionsService {
         version: true,
         isPublished: true,
         createdAt: true,
+        markdown: true,
       },
     });
   }
@@ -56,6 +57,7 @@ export class AdminTopicVersionsService {
       version: version.version,
       isPublished: version.isPublished,
       createdAt: version.createdAt,
+      markdown: version.markdown,
       blocks: version.blocks.map(block => ({
         ...block,
         data: normalizeBlockData(block.type as BlockType, block.data),
@@ -83,6 +85,7 @@ export class AdminTopicVersionsService {
         topicId,
         version: nextVersion,
         isPublished: false,
+        markdown: payload.markdown ?? null,
       },
     });
   }
@@ -109,6 +112,39 @@ export class AdminTopicVersionsService {
 
     return this.prisma.client.topicVersion.findUnique({
       where: { id: versionId },
+      select: {
+        id: true,
+        topicId: true,
+        version: true,
+        isPublished: true,
+        createdAt: true,
+        markdown: true,
+      },
+    });
+  }
+
+  async updateVersion(topicId: string, versionId: string, payload: CreateTopicVersionDto) {
+    const version = await this.prisma.client.topicVersion.findFirst({
+      where: { id: versionId, topicId },
+    });
+
+    if (!version) {
+      throw new NotFoundException('Topic version not found');
+    }
+
+    return this.prisma.client.topicVersion.update({
+      where: { id: versionId },
+      data: {
+        markdown: payload.markdown ?? version.markdown,
+      },
+      select: {
+        id: true,
+        topicId: true,
+        version: true,
+        isPublished: true,
+        createdAt: true,
+        markdown: true,
+      },
     });
   }
 }

@@ -1,5 +1,7 @@
 Admin CMS API Reference
 
+Topic Versions now support optional markdown content. Frontend can send markdown in admin topic version create/update payloads and it will be returned in version responses.
+
 Base Path: /admin
 Auth: Admin-only (guarded)
 Content-Type: application/json
@@ -124,6 +126,8 @@ Validation Error
 }
 
 Example Bulk Import JSON (full subject tree)
+
+Topic versions accept a "markdown" field (string) in addition to blocks.
 {
   "subject": {
     "slug": "javascript",
@@ -377,6 +381,7 @@ Fetch published content for a topic.
 Response
 {
   "topic": { "slug": "string", "title": "string", "isActive": "boolean" },
+  "markdown": "string | null",
   "blocks": [
     { "type": "intro", "data": { "title": "string", "description": "string" } },
     { "type": "code", "data": { "language": "string", "code": "string" } },

@@ -1,15 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BlockType } from '../../blocks/block-type.enum';
-import { validateBlock } from '../../blocks/block-validator';
 import { BulkImportSubjectDto } from './dto/bulk-import-subject.dto';
+import { renderMarkdownToHtml } from '../../utils/markdown-renderer.util';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 
 @Injectable()
 export class AdminSubjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async listSubjects() {
     return this.prisma.client.subject.findMany({
@@ -128,20 +127,9 @@ export class AdminSubjectsService {
 
     await this.prisma.client.$transaction(async tx => {
       if (topicIds.length > 0) {
-        const versions = await tx.topicVersion.findMany({
+        await tx.topicVersion.deleteMany({
           where: { topicId: { in: topicIds } },
-          select: { id: true },
         });
-        const versionIds = versions.map(version => version.id);
-
-        if (versionIds.length > 0) {
-          await tx.block.deleteMany({
-            where: { topicVersionId: { in: versionIds } },
-          });
-          await tx.topicVersion.deleteMany({
-            where: { id: { in: versionIds } },
-          });
-        }
 
         await tx.topic.deleteMany({
           where: { id: { in: topicIds } },
@@ -199,21 +187,21 @@ export class AdminSubjectsService {
         (await this.getNextSubjectOrderIndex(tx));
       const subjectRecord = subject
         ? await tx.subject.update({
-            where: { id: subject.id },
-            data: {
-              title: payload.subject.title,
-              orderIndex: subjectOrderIndex,
-              isActive: payload.subject.isActive ?? subject.isActive,
-            },
-          })
+          where: { id: subject.id },
+          data: {
+            title: payload.subject.title,
+            orderIndex: subjectOrderIndex,
+            isActive: payload.subject.isActive ?? subject.isActive,
+          },
+        })
         : await tx.subject.create({
-            data: {
-              slug: payload.subject.slug,
-              title: payload.subject.title,
-              orderIndex: subjectOrderIndex,
-              isActive: payload.subject.isActive ?? true,
-            },
-          });
+          data: {
+            slug: payload.subject.slug,
+            title: payload.subject.title,
+            orderIndex: subjectOrderIndex,
+            isActive: payload.subject.isActive ?? true,
+          },
+        });
 
       for (const topicPayload of payload.topics) {
         const existingTopic = await tx.topic.findFirst({
@@ -232,24 +220,24 @@ export class AdminSubjectsService {
 
         const topicRecord = existingTopic
           ? await tx.topic.update({
-              where: { id: existingTopic.id },
-              data: {
-                title: topicPayload.title,
-                orderIndex: topicOrderIndex,
-                isActive: topicPayload.isActive ?? existingTopic.isActive,
-                level: topicLevel,
-              },
-            })
+            where: { id: existingTopic.id },
+            data: {
+              title: topicPayload.title,
+              orderIndex: topicOrderIndex,
+              isActive: topicPayload.isActive ?? existingTopic.isActive,
+              level: topicLevel,
+            },
+          })
           : await tx.topic.create({
-              data: {
-                subjectId: subjectRecord.id,
-                slug: topicPayload.slug,
-                title: topicPayload.title,
-                orderIndex: topicOrderIndex,
-                isActive: topicPayload.isActive ?? true,
-                level: topicLevel,
-              },
-            });
+            data: {
+              subjectId: subjectRecord.id,
+              slug: topicPayload.slug,
+              title: topicPayload.title,
+              orderIndex: topicOrderIndex,
+              isActive: topicPayload.isActive ?? true,
+              level: topicLevel,
+            },
+          });
 
         let currentVersion = await tx.topicVersion.findFirst({
           where: { topicId: topicRecord.id },
@@ -261,12 +249,15 @@ export class AdminSubjectsService {
           const nextVersionNumber = (currentVersion?.version ?? 0) + 1;
           currentVersion = { version: nextVersionNumber };
 
+          const html = await renderMarkdownToHtml(versionPayload.markdown);
+
           const createdVersion = await tx.topicVersion.create({
             data: {
               topicId: topicRecord.id,
               version: nextVersionNumber,
               isPublished: false,
-              markdown: versionPayload.markdown ?? null,
+              markdown: versionPayload.markdown,
+              html,
             },
           });
 
@@ -281,15 +272,6 @@ export class AdminSubjectsService {
               data: { isPublished: true },
             });
           }
-
-          await tx.block.createMany({
-            data: versionPayload.blocks.map((block, index) => ({
-              topicVersionId: createdVersion.id,
-              type: block.type,
-              orderIndex: index + 1,
-              data: block.data ?? {},
-            })),
-          });
         }
       }
 
@@ -318,21 +300,9 @@ export class AdminSubjectsService {
         if (version.status && version.status !== 'published') {
           errors.push(`topics[${topicIndex}].versions[${versionIndex}].status must be "published" or omitted`);
         }
-
-        if (version.markdown && typeof version.markdown !== 'string') {
-          errors.push(`topics[${topicIndex}].versions[${versionIndex}].markdown must be a string`);
+        if (!version.markdown) {
+          errors.push(`topics[${topicIndex}].versions[${versionIndex}].markdown is required`);
         }
-
-        version.blocks.forEach((block, blockIndex) => {
-          try {
-            validateBlock(block.type as BlockType, block.data);
-          } catch (error) {
-            const message = error instanceof Error ? error.message : 'Invalid block data';
-            errors.push(
-              `topics[${topicIndex}].versions[${versionIndex}].blocks[${blockIndex}] ${message}`,
-            );
-          }
-        });
       });
     });
 

@@ -1,28 +1,15 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
-class BulkBlockDto {
-  @IsString()
-  type: string;
-
-  @IsObject()
-  data: Record<string, any>;
-}
-
 class BulkTopicVersionDto {
   @IsOptional()
   @IsString()
   status?: string;
 
-  @IsOptional()
   @IsString()
-  markdown?: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => BulkBlockDto)
-  blocks: BulkBlockDto[];
+  markdown: string;
 }
+
 
 class BulkTopicDto {
   @IsString()

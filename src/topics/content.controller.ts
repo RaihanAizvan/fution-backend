@@ -8,9 +8,12 @@ export class ContentController {
     @Get(':slug/content')
     async getTopicContent(@Param('slug') slug: string) {
         const content = await this.topicsService.getTopicContent(slug);
+
         if (!content) {
             throw new NotFoundException('Topic content not found');
         }
+
         return content;
     }
 }
+

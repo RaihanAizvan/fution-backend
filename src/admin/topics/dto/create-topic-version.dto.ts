@@ -5,7 +5,7 @@ export class CreateTopicVersionDto {
   @IsInt()
   version?: number;
 
-  @IsOptional()
   @IsString()
-  markdown?: string;
+  markdown: string;
 }
+

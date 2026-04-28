@@ -177,9 +177,11 @@ export class AdminSubjectsService {
     }
 
     return this.prisma.client.$transaction(async (tx) => {
+      // Upsert subject by its unique slug
       const subject = await tx.subject.findFirst({
         where: { slug: payload.subject.slug },
       });
+
 
       const subjectOrderIndex =
         payload.subject.orderIndex ??

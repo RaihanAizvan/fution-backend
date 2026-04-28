@@ -46,23 +46,11 @@ model TopicVersion {
   topicId     String
   version     Int
   isPublished Boolean  @default(false)
-  markdown    String?
+  markdown    String
+  html        String
   topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  blocks      Block[]
   createdAt   DateTime @default(now())
 
   @@unique([topicId, version])
 }
 
-model Block {
-  id             String   @id @default(uuid())
-  topicVersionId String
-  type           String
-  orderIndex     Int
-  parentBlockId  String?
-  topicVersion   TopicVersion @relation(fields: [topicVersionId], references: [id], onDelete: Cascade)
-  parent         Block?  @relation("BlockHierarchy", fields: [parentBlockId], references: [id], onDelete: Cascade)
-  children       Block[] @relation("BlockHierarchy")
-  data           Json
-  createdAt      DateTime @default(now())
-}

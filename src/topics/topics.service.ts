@@ -30,7 +30,15 @@ export class TopicsService {
     return subject.topics;
   }
 
+  /**
+   * Fetches the published content for a topic by its slug.
+   * Includes raw markdown and pre-rendered HTML.
+   *
+   * @param slug - The unique slug of the topic.
+   * @returns The topic information and its content, or null if not found.
+   */
   async getTopicContent(slug: string) {
+
     const topic = await this.prisma.client.topic.findFirst({
       where: { slug, isActive: true },
       include: {

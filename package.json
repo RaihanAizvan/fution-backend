@@ -37,12 +37,13 @@
     "prisma": "^7.3.0",
     "reflect-metadata": "^0.2.2",
     "rehype": "^13.0.2",
-    "rehype-highlight": "^7.0.2",
     "rehype-stringify": "^10.0.1",
     "remark": "^15.0.1",
     "remark-gfm": "^4.0.1",
     "remark-rehype": "^11.1.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "shiki": "^4.0.2",
+    "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

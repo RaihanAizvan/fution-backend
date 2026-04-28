@@ -1,6 +1,6 @@
 Admin CMS API Reference
 
-Topic Versions now support optional markdown content. Frontend can send markdown in admin topic version create/update payloads and it will be returned in version responses.
+System is now pure Markdown-driven with cached HTML rendering. Content is stored as raw Markdown and pre-rendered to HTML on write (create/update) for high-performance delivery.
 
 Base Path: /admin
 Auth: Admin-only (guarded)
@@ -56,7 +56,7 @@ Delete a subject.
 
 Rules
 - Fails if any topic under the subject has a published version.
-- If allowed, deletes subject, topics, versions, and blocks in a transaction.
+- If allowed, deletes subject, topics, and versions in a transaction.
 
 Error
 {
@@ -99,9 +99,7 @@ Body
       "versions": [
         {
           "status": "published",
-          "blocks": [
-            { "type": "intro", "data": { "title": "Functions", "description": "Reusable blocks of logic." } }
-          ]
+          "markdown": "# Functions\n\nReusable blocks of logic.\n\n```javascript\nfunction add(a, b) { return a + b; }\n```"
         }
       ]
     }
@@ -113,7 +111,7 @@ Rules
 - Topics are upserted by slug + subjectId.
 - Versions are always new (append-only).
 - status: "published" unpublishes previous version, publishes the new one.
-- Blocks are created fresh in payload order.
+- HTML is automatically rendered from markdown during import.
 - Entire import is transactional.
 
 Validation Error
@@ -121,97 +119,7 @@ Validation Error
   "error": "VALIDATION_ERROR",
   "errors": [
     "topics[0].versions must not be empty",
-    "topics[1].versions[0].blocks[2] Invalid block data"
-  ]
-}
-
-Example Bulk Import JSON (full subject tree)
-
-Topic versions accept a "markdown" field (string) in addition to blocks.
-{
-  "subject": {
-    "slug": "javascript",
-    "title": "JavaScript",
-    "orderIndex": 1,
-    "isActive": true
-  },
-  "topics": [
-    {
-      "slug": "functions",
-      "title": "Functions",
-      "level": "beginner",
-      "orderIndex": 1,
-      "isActive": true,
-      "versions": [
-        {
-          "status": "published",
-          "blocks": [
-            {
-              "type": "intro",
-              "data": {
-                "title": "Functions",
-                "description": "Reusable blocks of logic."
-              }
-            },
-            {
-              "type": "code",
-              "data": {
-                "language": "javascript",
-                "code": "function add(a, b) { return a + b; }"
-              }
-            },
-            {
-              "type": "accordion",
-              "data": {
-                "items": [
-                  {
-                    "title": "Arrow Functions",
-                    "description": "Shorter syntax with lexical this."
-                  },
-                  {
-                    "title": "Closures",
-                    "description": "Functions that capture variables from their scope."
-                  }
-                ]
-              }
-            },
-            {
-              "type": "checklist",
-              "data": {
-                "items": [
-                  {
-                    "title": "Use descriptive variable names",
-                    "description": "Optional detail"
-                  }
-                ]
-              }
-            },
-            {
-              "type": "pitfalls",
-              "data": {
-                "items": [
-                  {
-                    "title": "Hoisting",
-                    "description": "Function declarations are hoisted."
-                  }
-                ]
-              }
-            },
-            {
-              "type": "resources",
-              "data": {
-                "items": [
-                  {
-                    "title": "MDN Functions",
-                    "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions"
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    }
+    "topics[1].versions[0].markdown is required"
   ]
 }
 
@@ -244,7 +152,7 @@ Delete a topic.
 
 Rules
 - Fails if the topic has any published version.
-- If allowed, deletes topic, versions, and blocks in a transaction.
+- If allowed, deletes topic and its versions in a transaction.
 
 Response
 { "deleted": true }
@@ -266,130 +174,38 @@ GET /admin/topics/:topicId/versions
 List all versions for a topic.
 
 GET /admin/topics/:topicId/versions/:versionId
-Get a specific version (includes blocks).
+Get a specific version (includes markdown and pre-rendered html).
 
 POST /admin/topics/:topicId/versions
 Create a draft version.
 
 Body
 {
-  "version": 2
+  "version": 2,
+  "markdown": "# Topic Content"
+}
+
+PATCH /admin/topics/:topicId/versions/:versionId
+Update a version's content.
+
+Body
+{
+  "markdown": "# Updated Content"
 }
 
 POST /admin/topics/:topicId/versions/:versionId/publish
 Publish a version (unpublishes prior published version).
 
-Blocks
-
-GET /admin/versions/:versionId/blocks
-List blocks for a version.
-
-POST /admin/versions/:versionId/blocks
-Create a block.
-
-Body
-{
-  "type": "intro",
-  "orderIndex": 1,
-  "data": { "title": "Intro", "description": "..." }
-}
-
-Block type examples
-
-Intro
-{
-  "type": "intro",
-  "data": {
-    "title": "Functions",
-    "description": "Reusable blocks of logic."
-  }
-}
-
-Code
-{
-  "type": "code",
-  "data": {
-    "language": "javascript",
-    "code": "function add(a, b) { return a + b; }"
-  }
-}
-
-Accordion
-{
-  "type": "accordion",
-  "data": {
-    "items": [
-      { "title": "Arrow Functions", "description": "Shorter syntax with lexical this." },
-      { "title": "Closures", "description": "Functions that capture variables from their scope." }
-    ]
-  }
-}
-
-Checklist
-{
-  "type": "checklist",
-  "data": {
-    "items": [
-      { "title": "Use descriptive variable names", "description": "Optional detail" },
-      { "title": "Prefer const/let over var", "description": "Optional detail" }
-    ]
-  }
-}
-
-Pitfalls
-{
-  "type": "pitfalls",
-  "data": {
-    "items": [
-      { "title": "Hoisting", "description": "Function declarations are hoisted." }
-    ]
-  }
-}
-
-Resources
-{
-  "type": "resources",
-  "data": {
-    "items": [
-      { "title": "MDN Functions", "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions" }
-    ]
-  }
-}
-
-PATCH /admin/versions/:versionId/blocks/:blockId
-Update a block.
-
-DELETE /admin/versions/:versionId/blocks/:blockId
-Delete a block.
-
-PUT /admin/versions/:versionId/blocks/reorder
-Reorder blocks.
-
-Body
-{
-  "blocks": [
-    { "blockId": "uuid-1", "orderIndex": 1 },
-    { "blockId": "uuid-2", "orderIndex": 2 }
-  ]
-}
-
 Public Content
 
 GET /topics/:slug/content
-Fetch published content for a topic.
+Fetch published content for a topic (returns cached HTML).
 
-Response
+Response 200
 {
   "topic": { "slug": "string", "title": "string", "isActive": "boolean" },
-  "markdown": "string | null",
-  "blocks": [
-    { "type": "intro", "data": { "title": "string", "description": "string" } },
-    { "type": "code", "data": { "language": "string", "code": "string" } },
-    { "type": "accordion", "data": { "items": [ { "title": "string", "description": "string" } ] } },
-    { "type": "checklist", "data": { "items": [ { "title": "string", "description": "string" } ] } },
-    { "type": "pitfalls", "data": { "items": [ { "title": "string", "description": "string" } ] } },
-    { "type": "resources", "data": { "items": [ { "title": "string", "url": "string" } ] } }
-  ]
+  "markdown": "string",
+  "html": "string (rendered HTML)"
 }
 
 Validation & Errors

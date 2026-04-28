@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { renderMarkdownToHtml } from '../src/utils/markdown-renderer.util';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -28,6 +29,9 @@ async function main() {
     },
   });
 
+  const functionsMarkdown = '# Functions\n\nReusable blocks of logic.\n\n```javascript\nfunction add(a, b) {\n  return a + b;\n}\n```\n';
+  const functionsHtml = await renderMarkdownToHtml(functionsMarkdown);
+
   const functions = await prisma.topic.upsert({
     where: {
       subjectId_slug: {
@@ -50,7 +54,7 @@ async function main() {
     },
   });
 
-  const version = await prisma.topicVersion.upsert({
+  await prisma.topicVersion.upsert({
     where: {
       topicId_version: {
         topicId: functions.id,
@@ -59,63 +63,20 @@ async function main() {
     },
     update: {
       isPublished: true,
-      markdown: '# Functions\n\nReusable blocks of logic.\n',
+      markdown: functionsMarkdown,
+      html: functionsHtml,
     },
     create: {
       topicId: functions.id,
       version: 1,
       isPublished: true,
-      markdown: '# Functions\n\nReusable blocks of logic.\n',
+      markdown: functionsMarkdown,
+      html: functionsHtml,
     },
-  });
-
-  await prisma.block.deleteMany({
-    where: {
-      topicVersionId: version.id,
-    },
-  });
-
-  await prisma.block.createMany({
-    data: [
-      {
-        topicVersionId: version.id,
-        type: 'intro',
-        orderIndex: 1,
-        data: {
-          title: 'Functions',
-          description: 'Reusable blocks of logic.',
-        },
-      },
-      {
-        topicVersionId: version.id,
-        type: 'code',
-        orderIndex: 2,
-        data: {
-          language: 'javascript',
-          code: 'function add(a, b) { return a + b; }',
-        },
-      },
-      {
-        topicVersionId: version.id,
-        type: 'accordion',
-        orderIndex: 3,
-        data: {
-          items: [
-            {
-              title: 'Arrow Functions',
-              content: 'Shorter function syntax with lexical this binding.',
-            },
-            {
-              title: 'Closures',
-              content: 'Functions that capture variables from their scope.',
-            },
-          ],
-        },
-      },
-    ],
   });
 }
 
 main()
   .catch(console.error)
   .finally(() => prisma.$disconnect());
+

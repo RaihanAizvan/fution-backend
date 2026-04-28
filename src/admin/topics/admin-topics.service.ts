@@ -5,7 +5,7 @@ import { UpdateTopicDto } from './dto/update-topic.dto';
 
 @Injectable()
 export class AdminTopicsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async listTopics(subjectId: string) {
     const subject = await this.prisma.client.subject.findUnique({
@@ -122,7 +122,6 @@ export class AdminTopicsService {
       throw new NotFoundException('Topic not found');
     }
 
-    // Check if topic has published versions
     if (topic.versions.length > 0) {
       throw new BadRequestException(
         'Cannot delete topic with published content. Deactivate it instead or unpublish the versions first.',
@@ -137,9 +136,6 @@ export class AdminTopicsService {
 
     await this.prisma.client.$transaction(async tx => {
       if (versionIds.length > 0) {
-        await tx.block.deleteMany({
-          where: { topicVersionId: { in: versionIds } },
-        });
         await tx.topicVersion.deleteMany({
           where: { id: { in: versionIds } },
         });
@@ -163,7 +159,6 @@ export class AdminTopicsService {
       throw new NotFoundException('Subject not found');
     }
 
-    // Verify all topics belong to this subject
     const topicIds = topics.map(t => t.topicId);
     const existingTopics = await this.prisma.client.topic.findMany({
       where: { id: { in: topicIds }, subjectId },
@@ -174,7 +169,6 @@ export class AdminTopicsService {
       throw new BadRequestException('One or more topics not found or do not belong to this subject');
     }
 
-    // Update all topics in a transaction
     await this.prisma.client.$transaction(
       topics.map(({ topicId, orderIndex }) =>
         this.prisma.client.topic.update({

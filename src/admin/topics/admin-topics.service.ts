@@ -135,11 +135,13 @@ export class AdminTopicsService {
     const versionIds = versions.map(version => version.id);
 
     await this.prisma.client.$transaction(async tx => {
+      // Delete all associated versions first to maintain referential integrity
       if (versionIds.length > 0) {
         await tx.topicVersion.deleteMany({
           where: { id: { in: versionIds } },
         });
       }
+
 
       await tx.topic.delete({
         where: { id: topicId },

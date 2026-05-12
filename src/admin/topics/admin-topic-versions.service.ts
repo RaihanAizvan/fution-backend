@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 import { renderMarkdownToHtml } from '../../utils/markdown-renderer.util';
@@ -15,7 +15,7 @@ export class AdminTopicVersionsService {
     });
 
     if (!topic) {
-      throw new NotFoundException('Topic not found');
+      throw new NotFoundException(`Topic with ID ${topicId} not found`);
     }
 
     return this.prisma.client.topicVersion.findMany({
@@ -39,7 +39,7 @@ export class AdminTopicVersionsService {
     });
 
     if (!version) {
-      throw new NotFoundException('Topic version not found');
+      throw new NotFoundException(`Topic version with ID ${versionId} not found for this topic`);
     }
 
     return version;
@@ -49,26 +49,48 @@ export class AdminTopicVersionsService {
   async createDraftVersion(topicId: string, payload: CreateTopicVersionDto) {
     const topic = await this.prisma.client.topic.findUnique({
       where: { id: topicId },
-      include: { versions: true },
+      select: { id: true },
     });
 
     if (!topic) {
-      throw new NotFoundException('Topic not found');
+      throw new NotFoundException(`Topic with ID ${topicId} not found`);
     }
 
-    const nextVersion = payload.version ??
-      (topic.versions.length
-        ? Math.max(...topic.versions.map(version => version.version)) + 1
-        : 1);
+    let nextVersion: number;
 
-    const html = await renderMarkdownToHtml(payload.markdown);
+    if (payload.version) {
+      // Check if specific version already exists
+      const existing = await this.prisma.client.topicVersion.findUnique({
+        where: {
+          topicId_version: {
+            topicId,
+            version: payload.version,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new BadRequestException(`Version ${payload.version} already exists for this topic. Please use a different version number or update the existing one.`);
+      }
+      nextVersion = payload.version;
+    } else {
+      // Calculate next version
+      const lastVersion = await this.prisma.client.topicVersion.findFirst({
+        where: { topicId },
+        orderBy: { version: 'desc' },
+        select: { version: true },
+      });
+      nextVersion = (lastVersion?.version ?? 0) + 1;
+    }
+
+    const html = payload.markdown ? await renderMarkdownToHtml(payload.markdown) : '';
 
     return this.prisma.client.topicVersion.create({
       data: {
         topicId,
         version: nextVersion,
         isPublished: false,
-        markdown: payload.markdown,
+        markdown: payload.markdown ?? '',
         html,
       },
     });
@@ -81,7 +103,7 @@ export class AdminTopicVersionsService {
     });
 
     if (!version) {
-      throw new NotFoundException('Topic version not found');
+      throw new NotFoundException(`Topic version with ID ${versionId} not found for this topic`);
     }
 
     await this.prisma.client.$transaction([
@@ -107,15 +129,32 @@ export class AdminTopicVersionsService {
     });
 
     if (!version) {
-      throw new NotFoundException('Topic version not found');
+      throw new NotFoundException(`Topic version with ID ${versionId} not found for this topic`);
     }
 
-    const html = await renderMarkdownToHtml(payload.markdown);
+    // If a new version number is provided, check for conflicts (unless it's the same)
+    if (payload.version && payload.version !== version.version) {
+      const existing = await this.prisma.client.topicVersion.findUnique({
+        where: {
+          topicId_version: {
+            topicId,
+            version: payload.version,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new BadRequestException(`Cannot update to version ${payload.version} as it already exists.`);
+      }
+    }
+
+    const html = payload.markdown ? await renderMarkdownToHtml(payload.markdown) : version.html;
 
     return this.prisma.client.topicVersion.update({
       where: { id: versionId },
       data: {
-        markdown: payload.markdown,
+        version: payload.version ?? version.version,
+        markdown: payload.markdown ?? version.markdown,
         html,
       },
     });

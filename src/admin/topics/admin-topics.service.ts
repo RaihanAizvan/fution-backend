@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { UpdateTopicDto } from './dto/update-topic.dto';
+import { renderMarkdownToHtml } from '../../utils/markdown-renderer.util';
 
 @Injectable()
 export class AdminTopicsService {
@@ -14,7 +15,7 @@ export class AdminTopicsService {
     });
 
     if (!subject) {
-      throw new NotFoundException('Subject not found');
+      throw new NotFoundException(`Subject with ID ${subjectId} not found`);
     }
 
     return this.prisma.client.topic.findMany({
@@ -31,34 +32,58 @@ export class AdminTopicsService {
     });
   }
 
-  async createTopic(subjectId: string, payload: CreateTopicDto) {
+  async createTopic(subjectId: string | undefined, payload: CreateTopicDto) {
+    // Use subjectId from path if provided, otherwise from body
+    const finalSubjectId = subjectId || payload.subjectId;
+
+    if (!finalSubjectId) {
+      throw new BadRequestException('Subject ID is required');
+    }
+
     const subject = await this.prisma.client.subject.findUnique({
-      where: { id: subjectId },
+      where: { id: finalSubjectId },
     });
 
     if (!subject) {
-      throw new NotFoundException('Subject not found');
+      throw new NotFoundException(`Subject with ID ${finalSubjectId} not found`);
     }
 
     const existing = await this.prisma.client.topic.findFirst({
-      where: { subjectId, slug: payload.slug },
+      where: { subjectId: finalSubjectId, slug: payload.slug },
     });
 
     if (existing) {
-      throw new BadRequestException('Topic slug already exists for subject');
+      throw new BadRequestException(`Topic with slug "${payload.slug}" already exists for this subject`);
     }
 
-    const orderIndex = payload.orderIndex ?? (await this.getNextOrderIndex(subjectId));
+    const orderIndex = payload.orderIndex ?? (await this.getNextOrderIndex(finalSubjectId));
 
-    return this.prisma.client.topic.create({
-      data: {
-        subjectId,
-        slug: payload.slug,
-        title: payload.title,
-        level: payload.level,
-        orderIndex,
-        isActive: payload.isActive ?? true,
-      },
+    return this.prisma.client.$transaction(async (tx) => {
+      const topic = await tx.topic.create({
+        data: {
+          subjectId: finalSubjectId,
+          slug: payload.slug,
+          title: payload.title,
+          level: payload.level,
+          orderIndex,
+          isActive: payload.isActive ?? true,
+        },
+      });
+
+      if (payload.markdown) {
+        const html = await renderMarkdownToHtml(payload.markdown);
+        await tx.topicVersion.create({
+          data: {
+            topicId: topic.id,
+            version: 1,
+            isPublished: true,
+            markdown: payload.markdown,
+            html,
+          },
+        });
+      }
+
+      return topic;
     });
   }
 
@@ -72,26 +97,31 @@ export class AdminTopicsService {
     return (last?.orderIndex ?? 0) + 1;
   }
 
-  async updateTopic(subjectId: string, topicId: string, payload: UpdateTopicDto) {
-    const topic = await this.prisma.client.topic.findFirst({
-      where: { id: topicId, subjectId },
+  async updateTopic(subjectId: string | null | undefined, topicId: string, payload: UpdateTopicDto) {
+    const topic = await this.prisma.client.topic.findUnique({
+      where: { id: topicId },
     });
 
     if (!topic) {
-      throw new NotFoundException('Topic not found');
+      throw new NotFoundException(`Topic with ID ${topicId} not found`);
+    }
+
+    // If subjectId is provided from path, verify it matches
+    if (subjectId && topic.subjectId !== subjectId) {
+        throw new BadRequestException('Topic does not belong to the specified subject');
     }
 
     if (payload.slug) {
       const existing = await this.prisma.client.topic.findFirst({
         where: {
-          subjectId,
+          subjectId: topic.subjectId,
           slug: payload.slug,
           id: { not: topicId },
         },
       });
 
       if (existing) {
-        throw new BadRequestException('Topic slug already exists for subject');
+        throw new BadRequestException(`Topic with slug "${payload.slug}" already exists for this subject`);
       }
     }
 
@@ -107,9 +137,9 @@ export class AdminTopicsService {
     });
   }
 
-  async deleteTopic(subjectId: string, topicId: string) {
-    const topic = await this.prisma.client.topic.findFirst({
-      where: { id: topicId, subjectId },
+  async deleteTopic(subjectId: string | null | undefined, topicId: string) {
+    const topic = await this.prisma.client.topic.findUnique({
+      where: { id: topicId },
       include: {
         versions: {
           where: { isPublished: true },
@@ -119,7 +149,12 @@ export class AdminTopicsService {
     });
 
     if (!topic) {
-      throw new NotFoundException('Topic not found');
+      throw new NotFoundException(`Topic with ID ${topicId} not found`);
+    }
+
+    // If subjectId is provided from path, verify it matches
+    if (subjectId && topic.subjectId !== subjectId) {
+        throw new BadRequestException('Topic does not belong to the specified subject');
     }
 
     if (topic.versions.length > 0) {
@@ -128,20 +163,11 @@ export class AdminTopicsService {
       );
     }
 
-    const versions = await this.prisma.client.topicVersion.findMany({
-      where: { topicId },
-      select: { id: true },
-    });
-    const versionIds = versions.map(version => version.id);
-
     await this.prisma.client.$transaction(async tx => {
       // Delete all associated versions first to maintain referential integrity
-      if (versionIds.length > 0) {
-        await tx.topicVersion.deleteMany({
-          where: { id: { in: versionIds } },
-        });
-      }
-
+      await tx.topicVersion.deleteMany({
+        where: { topicId },
+      });
 
       await tx.topic.delete({
         where: { id: topicId },

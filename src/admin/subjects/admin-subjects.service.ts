@@ -173,30 +173,34 @@ export class AdminSubjectsService {
     const errors = this.validateImportPayload(payload);
 
     if (errors.length > 0) {
-      throw new BadRequestException({ error: 'VALIDATION_ERROR', errors });
+      throw new BadRequestException({
+        message: 'Validation failed for bulk import',
+        errors,
+      });
     }
 
     return this.prisma.client.$transaction(async (tx) => {
       // Upsert subject by its unique slug
-      const subject = await tx.subject.findFirst({
+      let subjectRecord = await tx.subject.findFirst({
         where: { slug: payload.subject.slug },
       });
 
-
       const subjectOrderIndex =
         payload.subject.orderIndex ??
-        subject?.orderIndex ??
+        subjectRecord?.orderIndex ??
         (await this.getNextSubjectOrderIndex(tx));
-      const subjectRecord = subject
-        ? await tx.subject.update({
-          where: { id: subject.id },
+
+      if (subjectRecord) {
+        subjectRecord = await tx.subject.update({
+          where: { id: subjectRecord.id },
           data: {
             title: payload.subject.title,
             orderIndex: subjectOrderIndex,
-            isActive: payload.subject.isActive ?? subject.isActive,
+            isActive: payload.subject.isActive ?? subjectRecord.isActive,
           },
-        })
-        : await tx.subject.create({
+        });
+      } else {
+        subjectRecord = await tx.subject.create({
           data: {
             slug: payload.subject.slug,
             title: payload.subject.title,
@@ -204,6 +208,7 @@ export class AdminSubjectsService {
             isActive: payload.subject.isActive ?? true,
           },
         });
+      }
 
       for (const topicPayload of payload.topics) {
         const existingTopic = await tx.topic.findFirst({
@@ -214,10 +219,7 @@ export class AdminSubjectsService {
         const topicLevel = topicPayload.level ?? existingTopic?.level;
 
         if (!topicLevel) {
-          throw new BadRequestException({
-            error: 'VALIDATION_ERROR',
-            errors: [`Topic ${topicPayload.slug} is missing level`],
-          });
+          throw new BadRequestException(`Topic "${topicPayload.slug}" is missing a level (required for new topics)`);
         }
 
         const topicRecord = existingTopic
@@ -278,6 +280,8 @@ export class AdminSubjectsService {
       }
 
       return { imported: true, subjectId: subjectRecord.id };
+    }, {
+      timeout: 60000, // 60 seconds for bulk import
     });
   }
 

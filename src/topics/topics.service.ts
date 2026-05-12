@@ -8,7 +8,11 @@ export class TopicsService {
   async getTopicsBySubject(subjectSlug: string) {
     const subject = await this.prisma.client.subject.findFirst({
       where: { slug: subjectSlug, isActive: true },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
         topics: {
           where: { isActive: true },
           orderBy: { orderIndex: 'asc' },
@@ -24,10 +28,10 @@ export class TopicsService {
     });
 
     if (!subject) {
-      return [];
+      return null;
     }
 
-    return subject.topics;
+    return subject;
   }
 
   /**

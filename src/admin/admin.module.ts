@@ -3,6 +3,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminSubjectsController } from './subjects/admin-subjects.controller';
 import { AdminSubjectsService } from './subjects/admin-subjects.service';
 import { AdminTopicsController } from './topics/admin-topics.controller';
+import { AdminTopicsRootController } from './topics/admin-topics-root.controller';
 import { AdminTopicsService } from './topics/admin-topics.service';
 import { AdminTopicVersionsController } from './topics/admin-topic-versions.controller';
 import { AdminTopicVersionsService } from './topics/admin-topic-versions.service';
@@ -12,6 +13,7 @@ import { AdminTopicVersionsService } from './topics/admin-topic-versions.service
   controllers: [
     AdminSubjectsController,
     AdminTopicsController,
+    AdminTopicsRootController,
     AdminTopicVersionsController,
   ],
   providers: [

@@ -17,4 +17,12 @@ export class CreateTopicDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  markdown?: string;
+
+  @IsOptional()
+  @IsString()
+  subjectId?: string;
 }

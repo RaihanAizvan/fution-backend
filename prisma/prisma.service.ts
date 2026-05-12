@@ -17,7 +17,15 @@ export class PrismaService
       throw new Error('DATABASE_URL is not set. Please configure it for Prisma.');
     }
 
-    const pool = new Pool({ connectionString: databaseUrl });
+    const pool = new Pool({
+      connectionString: databaseUrl,
+      ssl:
+        databaseUrl.includes('sslmode=require') ||
+        (!databaseUrl.includes('localhost') &&
+          !databaseUrl.includes('127.0.0.1'))
+          ? { rejectUnauthorized: false }
+          : false,
+    });
     const adapter = new PrismaPg(pool);
 
     this.prisma = new PrismaClient({ adapter });

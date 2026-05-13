@@ -137,33 +137,33 @@ export class AdminTopicsService {
     });
   }
 
-  async deleteTopic(subjectId: string | null | undefined, topicId: string) {
-    const topic = await this.prisma.client.topic.findUnique({
-      where: { id: topicId },
-      include: {
-        versions: {
-          where: { isPublished: true },
-          select: { id: true },
-        },
-      },
-    });
-
-    if (!topic) {
-      throw new NotFoundException(`Topic with ID ${topicId} not found`);
-    }
-
-    // If subjectId is provided from path, verify it matches
-    if (subjectId && topic.subjectId !== subjectId) {
-        throw new BadRequestException('Topic does not belong to the specified subject');
-    }
-
-    if (topic.versions.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete topic with published content. Deactivate it instead or unpublish the versions first.',
-      );
-    }
-
+  async deleteTopic(subjectId: string | null | undefined, topicId: string, force = false) {
     await this.prisma.client.$transaction(async tx => {
+      const topic = await tx.topic.findUnique({
+        where: { id: topicId },
+        include: {
+          versions: {
+            where: { isPublished: true },
+            select: { id: true },
+          },
+        },
+      });
+
+      if (!topic) {
+        throw new NotFoundException(`Topic with ID ${topicId} not found`);
+      }
+
+      // If subjectId is provided from path, verify it matches
+      if (subjectId && topic.subjectId !== subjectId) {
+        throw new BadRequestException('Topic does not belong to the specified subject');
+      }
+
+      if (!force && topic.versions.length > 0) {
+        throw new BadRequestException(
+          'Cannot delete topic with published content. Deactivate it instead or unpublish the versions first.',
+        );
+      }
+
       // Delete all associated versions first to maintain referential integrity
       await tx.topicVersion.deleteMany({
         where: { topicId },

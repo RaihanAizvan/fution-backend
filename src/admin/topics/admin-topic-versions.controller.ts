@@ -1,12 +1,10 @@
-import { Body, Controller, Get, Param, Post, UseGuards, Patch } from '@nestjs/common';
-import { AdminGuard } from '../admin.guard';
+import { Body, Controller, Delete, Get, Param, Post, Patch, Query } from '@nestjs/common';
 import { AdminTopicVersionsService } from './admin-topic-versions.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 
 @Controller('admin/topics/:topicId/versions')
-@UseGuards(AdminGuard)
 export class AdminTopicVersionsController {
-  constructor(private readonly versionsService: AdminTopicVersionsService) {}
+  constructor(private readonly versionsService: AdminTopicVersionsService) { }
 
   @Get()
   listVersions(@Param('topicId') topicId: string) {
@@ -45,5 +43,13 @@ export class AdminTopicVersionsController {
   ) {
     return this.versionsService.updateVersion(topicId, versionId, payload);
   }
-}
 
+  @Delete(':versionId')
+  deleteVersion(
+    @Param('topicId') topicId: string,
+    @Param('versionId') versionId: string,
+    @Query('force') force?: string,
+  ) {
+    return this.versionsService.deleteVersion(topicId, versionId, force === 'true');
+  }
+}

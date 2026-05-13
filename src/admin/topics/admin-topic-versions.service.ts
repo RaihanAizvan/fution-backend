@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateTopicVersionDto } from './dto/create-topic-version.dto';
 import { renderMarkdownToHtml } from '../../utils/markdown-renderer.util';
@@ -158,6 +158,27 @@ export class AdminTopicVersionsService {
         html,
       },
     });
+  }
+
+  async deleteVersion(topicId: string, versionId: string, force = false) {
+    const version = await this.prisma.client.topicVersion.findFirst({
+      where: { id: versionId, topicId },
+      select: { id: true, isPublished: true },
+    });
+
+    if (!version) {
+      throw new NotFoundException(`Topic version with ID ${versionId} not found for this topic`);
+    }
+
+    if (version.isPublished && !force) {
+      throw new ConflictException('Published versions cannot be deleted.');
+    }
+
+    await this.prisma.client.topicVersion.delete({
+      where: { id: versionId },
+    });
+
+    return { success: true };
   }
 
 }
